@@ -1,9 +1,12 @@
 package io.swagger.codegen;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.samskivert.mustache.Mustache;
 import com.samskivert.mustache.Template;
 import io.swagger.codegen.ignore.CodegenIgnoreProcessor;
-import io.swagger.codegen.languages.AbstractJavaCodegen;
 import io.swagger.codegen.utils.ImplementationVersion;
 import io.swagger.models.*;
 import io.swagger.models.auth.OAuth2Definition;
@@ -480,6 +483,7 @@ public class DefaultGenerator extends AbstractGenerator implements Generator {
                         return ObjectUtils.compare(one.operationId, another.operationId);
                     }
                 });
+
                 Map<String, Object> operation = processOperations(config, tag, ops, allModels);
 
                 operation.put("hostWithoutBasePath", getHostWithoutBasePath());
@@ -517,16 +521,69 @@ public class DefaultGenerator extends AbstractGenerator implements Generator {
                     }
                 }
 
+                //create folder for group
+                File folderPath = new File(tag);
+                if (tag.equals(""))
+                    folderPath = new File("DefaultApi");
+                if (folderPath.exists()) {
+                    LOGGER.info("Folder exists. Skipped overwriting " + tag);
+                } else {
+                    folderPath.mkdir();
+                }
+
                 for (String templateName : config.apiTemplateFiles().keySet()) {
-                    String filename = config.apiFilename(templateName, tag);
-                    if (!config.shouldOverwrite(filename) && new File(filename).exists()) {
-                        LOGGER.info("Skipped overwriting " + filename);
-                        continue;
+                    //create test data files for each api
+                    List<CodegenOperation> operationPaths = new ArrayList<CodegenOperation>();
+                    for (String m : paths.keySet()) {
+                        if (tag.equals(m)) {
+                            operationPaths = paths.get(m);
+                        }
                     }
 
-                    File written = processTemplateToFile(operation, templateName, filename);
-                    if (written != null) {
-                        files.add(written);
+                    for (CodegenOperation co : operationPaths) {
+                        String fileName = config.apiFilename(templateName, tag + File.separator + co.operationId);
+                        if (tag.equals(""))
+                            fileName = config.apiFilename(templateName, co.nickname);
+                        if (!config.shouldOverwrite(fileName) && new File(fileName).exists()) {
+                            LOGGER.info("Skipped overwriting " + fileName);
+                            continue;
+                        }
+                        operation.put("testDataFilePath", co.operationId + "Api");
+
+                        //operation.remove("operations");
+                        operation.put("Content-Type", co.consumes.get(0).get("mediaType"));
+                        operation.put("accept", co.produces.get(0).get("mediaType"));
+                        if(co.requestBodyExamples != null && co.requestBodyExamples.get(0).get("example") != null) {
+                            String strBodyExample = co.requestBodyExamples.get(0).get("example");
+                            List<Map<String, String>> exampleList = generateParamsMap(strBodyExample);
+                            String sBodyParam = generateBodyParamsString(strBodyExample);
+                            operation.put("inBodyParams", sBodyParam);
+                            for(CodegenParameter param : co.allParams) {
+                                if (!param.isPrimitiveType) continue;
+                                Map<String, String> newMap = new HashMap<String, String>();
+                                //String strParam = param.jsonSchema;
+                                if(!hasParameter(exampleList, param.paramName)){
+                                    newMap.put("key", param.paramName);
+                                    newMap.put("value", param.example.replaceAll("\"",""));
+                                    exampleList.add(newMap);
+                                }
+                            }
+                            for (int i = 0; i < exampleList.size(); i ++) {
+
+                                exampleList.get(i).put("value", exampleList.get(i).get("value").replaceAll("\"", ""));
+                                if (i < exampleList.size() - 1)
+                                    exampleList.get(i).put("hasMore", "true");
+                                else
+                                    exampleList.get(i).put("hasMore", "false");
+
+                            }
+                            operation.put("inParams", exampleList);
+                        }
+                        operation.put("operation", co);
+                        File written = processTemplateToFile(operation, templateName, fileName);
+                        if (written != null) {
+                            files.add(written);
+                        }
                     }
                 }
 
@@ -574,6 +631,64 @@ public class DefaultGenerator extends AbstractGenerator implements Generator {
         }
 
     }
+
+    boolean hasParameter(List<Map<String, String>> paramList, String paramName){
+        for (Map<String, String> param : paramList){
+            if (param.get("key").equals(paramName))
+                return true;
+        }
+        return false;
+    }
+
+    protected String generateBodyParamsString(String strParams) {
+        List<Map<String, Object>> bundle = new ArrayList<>();
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            JsonNode rootNode = mapper.readTree(strParams);
+
+            for (Iterator<String> it = rootNode.fieldNames(); it.hasNext(); ) {
+                String sKey = it.next();
+                ObjectNode objectNode = (ObjectNode) rootNode;
+                objectNode.put(sKey, "${" + sKey + "}");
+            }
+
+            String rawJsonString = rootNode.toString();
+            rootNode = mapper.readTree(strParams);
+            for (Iterator<String> it = rootNode.fieldNames(); it.hasNext(); ){
+                String sKey = it.next();
+                if (!rootNode.get(sKey).isTextual()) {
+                    String strRawValue = "\"${" + sKey + "}\"";
+                    String replaceValue = "${" + sKey + "}";
+                    String outValue = rawJsonString.replace(strRawValue, replaceValue);
+                    rawJsonString = rawJsonString.replace(strRawValue, replaceValue);
+                }
+            }
+            return rawJsonString;
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+        return "";
+    }
+
+    protected List<Map<String, String>> generateParamsMap(String strParams) {
+        List<Map<String, String>> bundle = new ArrayList<>();
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            JsonNode rootNode = mapper.readTree(strParams);
+
+            for (Iterator<String> it = rootNode.fieldNames(); it.hasNext(); ) {
+                String sKey = it.next();
+                Map<String, String> newMap = new HashMap<String, String>();
+                newMap.put("key", sKey);
+                newMap.put("value", rootNode.get(sKey).asText().replaceAll("\"", ""));
+                bundle.add(newMap);
+            }
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+        return bundle;
+    }
+
 
     protected void generateSupportingFiles(List<File> files, Map<String, Object> bundle) {
         if (!isGenerateSupportingFiles) {
@@ -911,7 +1026,8 @@ public class DefaultGenerator extends AbstractGenerator implements Generator {
             try {
                 CodegenOperation codegenOperation = config.fromOperation(resourcePath, httpMethod, operation, swagger.getDefinitions(), swagger);
                 codegenOperation.tags = new ArrayList<Tag>(tags);
-                config.addOperationToGroup(config.sanitizeTag(tag.getName()), resourcePath, operation, codegenOperation, operations);
+                String tagName = tag.getName();
+                config.addOperationToGroup(config.sanitizeTag(tagName), resourcePath, operation, codegenOperation, operations);
 
                 List<Map<String, List<String>>> securities = operation.getSecurity();
                 if (securities == null && swagger.getSecurity() != null) {

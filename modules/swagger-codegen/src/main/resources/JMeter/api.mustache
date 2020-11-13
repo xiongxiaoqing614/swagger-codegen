@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<jmeterTestPlan version="1.2" properties="2.8" jmeter="2.13 r1665067">
+<jmeterTestPlan version="1.2" properties="5.0" jmeter="2.13 r1665067">
   <hashTree>
-    <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="{{classname}} Test Plan" enabled="true">
+    <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="{{classname}}测试计划" enabled="true">
       <stringProp name="TestPlan.comments"></stringProp>
       <boolProp name="TestPlan.functional_mode">false</boolProp>
       <boolProp name="TestPlan.serialize_threadgroups">false</boolProp>
@@ -13,21 +13,6 @@
     <hashTree>
       <Arguments guiclass="ArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
         <collectionProp name="Arguments.arguments">
-          <elementProp name="threads" elementType="Argument">
-            <stringProp name="Argument.name">threads</stringProp>
-            <stringProp name="Argument.value">${__P(threads,1)}</stringProp>
-            <stringProp name="Argument.metadata">=</stringProp>
-          </elementProp>
-          <elementProp name="rampup" elementType="Argument">
-            <stringProp name="Argument.name">rampup</stringProp>
-            <stringProp name="Argument.value">${__P(rampup,1)}</stringProp>
-            <stringProp name="Argument.metadata">=</stringProp>
-          </elementProp>
-          <elementProp name="duration" elementType="Argument">
-            <stringProp name="Argument.name">duration</stringProp>
-            <stringProp name="Argument.value">${__P(duration,1)}</stringProp>
-            <stringProp name="Argument.metadata">=</stringProp>
-          </elementProp>
           <elementProp name="testCases" elementType="Argument">
             <stringProp name="Argument.name">testCases</stringProp>
             <stringProp name="Argument.value">${__P(testCases,10)}</stringProp>
@@ -35,19 +20,19 @@
           </elementProp>
           <elementProp name="host" elementType="Argument">
             <stringProp name="Argument.name">host</stringProp>
-            <stringProp name="Argument.value">${__P(host,localhost)}</stringProp>
+            <stringProp name="Argument.value">${__P(host,host)}</stringProp>
             <stringProp name="Argument.metadata">=</stringProp>
           </elementProp>
           <elementProp name="port" elementType="Argument">
             <stringProp name="Argument.name">port</stringProp>
-            <stringProp name="Argument.value">${__P(port,8080)}</stringProp>
+            <stringProp name="Argument.value">${__P(port,port)}</stringProp>
             <stringProp name="Argument.metadata">=</stringProp>
-          </elementProp>{{#operations}}{{#operation}}
+          </elementProp>{{#operation}}
           <elementProp name="testData.{{operationId}}File" elementType="Argument">
             <stringProp name="Argument.name">testData.{{operationId}}File</stringProp>
-            <stringProp name="Argument.value">${__P(testData.{{operationId}}File,{{classname}}.csv)}</stringProp>
+            <stringProp name="Argument.value">${__P(testData.{{operationId}}File,./{{testDataFilePath}}.csv)}</stringProp>
             <stringProp name="Argument.metadata">=</stringProp>
-          </elementProp>{{/operation}}{{/operations}}
+          </elementProp>{{/operation}}
         </collectionProp>
       </Arguments>
       <hashTree/>
@@ -65,33 +50,58 @@
         <stringProp name="HTTPSampler.concurrentPool">4</stringProp>
       </ConfigTestElement>
       <hashTree/>
-    {{#operations}}{{#operation}}<ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Thread Group - {{operationId}}" enabled="true">
+    {{#operation}}<ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="{{summary}}-{{operationId}}" enabled="true">
         <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
         <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller" enabled="true">
           <boolProp name="LoopController.continue_forever">false</boolProp>
-          <stringProp name="LoopController.loops">${testCases}</stringProp>
+          <stringProp name="LoopController.loops">1</stringProp>
         </elementProp>
-        <stringProp name="ThreadGroup.num_threads">${threads}</stringProp>
-        <stringProp name="ThreadGroup.ramp_time">${rampup}</stringProp>
-        <longProp name="ThreadGroup.start_time">1448391617000</longProp>
-        <longProp name="ThreadGroup.end_time">1448391617000</longProp>
-        <boolProp name="ThreadGroup.scheduler">true</boolProp>
-        <stringProp name="ThreadGroup.duration">${duration}</stringProp>
-        <stringProp name="ThreadGroup.delay">5</stringProp>
+        <stringProp name="ThreadGroup.num_threads">1</stringProp>
+        <stringProp name="ThreadGroup.ramp_time">1</stringProp>
+        <boolProp name="ThreadGroup.scheduler">false</boolProp>
+        <stringProp name="ThreadGroup.duration"></stringProp>
+        <stringProp name="ThreadGroup.delay"></stringProp>
       </ThreadGroup>
       <hashTree>
-        <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP Header Manager" enabled="true">
+        <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP信息头管理器" enabled="true">
           <collectionProp name="HeaderManager.headers">{{#headerParams}}
             <elementProp name="" elementType="Header">
               <stringProp name="Header.name">{{paramName}}</stringProp>
-              <stringProp name="Header.value">${__RandomString(10,qwertyuiopasdfghjklzxcvbnm)}</stringProp>
+              <stringProp name="Header.value">{{defaultValue}}</stringProp>
             </elementProp>{{/headerParams}}
+            <elementProp name="" elementType="Header">
+              <stringProp name="Header.name">Content-Type</stringProp>
+              <stringProp name="Header.value">{{Content-Type}}</stringProp>
+            </elementProp>
+            <elementProp name="" elementType="Header">
+              <stringProp name="Header.name">accept</stringProp>
+              <stringProp name="Header.value">{{accept}}</stringProp>
+            </elementProp>
           </collectionProp>
         </HeaderManager>
         <hashTree/>
-        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="{{operationId}} - ${testCase}" enabled="true">
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="{{operationId}}-${testCase}" enabled="true">
+          {{#bodyParams}}
+          <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
+            <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="" elementType="HTTPArgument">
+                <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                <stringProp name="Argument.value">{{inBodyParams}}</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+            </collectionProp>
+          </elementProp>
+          {{/bodyParams}}{{^bodyParams}}
           <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
-            <collectionProp name="Arguments.arguments">{{#queryParams}}
+            <collectionProp name="Arguments.arguments">{{#inParams}}
+              <elementProp name="{{key}}" elementType="HTTPArgument">
+                <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                <stringProp name="Argument.name">{{key}}</stringProp>
+                {{=<% %>=}}<stringProp name="Argument.value">${<% key %>}</stringProp><%={{ }}=%>
+                <stringProp name="Argument.metadata">=</stringProp>
+                <boolProp name="HTTPArgument.use_equals">true</boolProp>
+              </elementProp>{{/inParams}}{{#queryParams}}
               <elementProp name="{{paramName}}" elementType="HTTPArgument">
                 <boolProp name="HTTPArgument.always_encode">false</boolProp>
                 {{=<% %>=}}<stringProp name="Argument.value">${<% paramName %>}</stringProp><%={{ }}=%>
@@ -100,7 +110,7 @@
                 <stringProp name="Argument.name">{{paramName}}</stringProp>
               </elementProp>{{/queryParams}}
             </collectionProp>
-          </elementProp>
+          </elementProp>{{/bodyParams}}
           <stringProp name="HTTPSampler.domain"></stringProp>
           <stringProp name="HTTPSampler.port"></stringProp>
           <stringProp name="HTTPSampler.connect_timeout"></stringProp>
@@ -119,7 +129,7 @@
           <stringProp name="TestPlan.comments">{{summary}} {{notes}}</stringProp>
         </HTTPSamplerProxy>
         <hashTree>
-          <CSVDataSet guiclass="TestBeanGUI" testclass="CSVDataSet" testname="Load CSV Test Data - {{operationId}}" enabled="true">
+          <CSVDataSet guiclass="TestBeanGUI" testclass="CSVDataSet" testname="读取测试数据-{{operationId}}" enabled="true">
             <stringProp name="delimiter">,</stringProp>
             <stringProp name="fileEncoding"></stringProp>
             <stringProp name="filename">${testData.{{operationId}}File}</stringProp>
@@ -142,10 +152,9 @@
         </ResponseAssertion>
         <hashTree/>
       </hashTree>
-          {{/operation}}
-      {{/operations}}
+      {{/operation}}
       <!-- end of operations -->
-      <ResultCollector guiclass="ViewResultsFullVisualizer" testclass="ResultCollector" testname="View Results Tree" enabled="true">
+      <ResultCollector guiclass="ViewResultsFullVisualizer" testclass="ResultCollector" testname="察看结果树" enabled="true">
         <boolProp name="ResultCollector.error_logging">false</boolProp>
         <objProp>
           <name>saveConfig</name>

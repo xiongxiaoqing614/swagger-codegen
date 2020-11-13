@@ -131,6 +131,9 @@ public class ExampleGenerator {
         } else if (property instanceof StringProperty) {
             logger.debug("String property");
             String defaultValue = ((StringProperty) property).getDefault();
+            if (defaultValue == null || defaultValue.isEmpty()) {
+                defaultValue = ((StringProperty) property).getDescription();
+            }
             if (defaultValue != null && !defaultValue.isEmpty()) {
                 logger.debug("Default value found: '{}'", defaultValue);
                 return defaultValue;

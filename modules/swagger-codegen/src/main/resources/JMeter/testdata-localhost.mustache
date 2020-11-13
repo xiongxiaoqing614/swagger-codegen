@@ -1,2 +1,2 @@
-testCase,httpStatusCode{{#operations}}{{#operation}}{{#hasParams}},{{/hasParams}}{{#allParams}}{{paramName}}{{#hasMore}},{{/hasMore}}{{/allParams}}{{/operation}}{{/operations}}
-Success,200{{#operations}}{{#operation}}{{#hasParams}},{{/hasParams}}{{#allParams}}0{{#hasMore}},{{/hasMore}}{{/allParams}}{{/operation}}{{/operations}}
+testCase,httpStatusCode{{#operation}}{{#hasParams}},{{/hasParams}}{{#inParams}}{{key}}{{#hasMore}},{{/hasMore}}{{/inParams}}{{/operation}}
+Success,200{{#operation}}{{#hasParams}},{{/hasParams}}{{#inParams}}{{value}}{{#hasMore}},{{/hasMore}}{{/inParams}}{{/operation}}
